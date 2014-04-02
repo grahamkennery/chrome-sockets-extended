@@ -14,7 +14,7 @@ Let's get started, shall we?
 The first step to using any of the chrome-sockets-extended functionality is to first open a socket:
 
 ```javascript
-chrome.sockets.tcp.open({}, function(tcpSocket) {
+chrome.socketsExtended.tcp.open({}, function(tcpSocket) {
 	// The tcpSocket parameter is an object representing a TCP socket that you can do things with!
 });
 ```
@@ -22,7 +22,7 @@ chrome.sockets.tcp.open({}, function(tcpSocket) {
 Now you have a TCP socket - pretty cool, huh? What about udp?
 
 ```javascript
-chrome.sockets.udp.open({}, function(udpSocket) {
+chrome.socketsExtended.udp.open({}, function(udpSocket) {
 	// This socket is UDP!
 });
 ```
@@ -30,7 +30,7 @@ chrome.sockets.udp.open({}, function(udpSocket) {
 Wow... that's slick - what if I want a tcpServer socket?
 
 ```javascript
-chrome.sockets.tcpServer.open({}, function(tcpServerSocket) {
+chrome.socketsExtended.tcpServer.open({}, function(tcpServerSocket) {
 	// Seeing a pattern?
 });
 ```
@@ -106,7 +106,7 @@ serverSocket.on('accept', function(clientSocket) {
 ####TCP echo example
 ```javascript
 // Create server socket
-chrome.sockets.tcpServer.open({}, function(serverSocket) {
+chrome.socketsExtended.tcpServer.open({}, function(serverSocket) {
 	
 	// Listen on port 4321 on localhost
 	serverSocket.listen('127.0.0.1', 4321, function(result) {

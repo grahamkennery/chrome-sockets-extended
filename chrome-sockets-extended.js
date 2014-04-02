@@ -1,4 +1,9 @@
 (function(window) {
+	chrome.socketsExtended = {
+		tcp: {},
+		udp: {},
+		tcpServer: {}
+	};
 
 	/*!
 	 * EventEmitter v4.2.7 - git.io/ee
@@ -24,7 +29,7 @@
 	 * @param  {Object}   properties SocketProperties sent to the chrome.sockets.tcp.create
 	 * @param  {Function} cb         Callback function(ChromeTcpSocket)
 	 */
-	chrome.sockets.tcp.open = function(properties, cb) {
+	chrome.socketsExtended.tcp.open = function(properties, cb) {
 		chrome.sockets.tcp.create(properties, function(createInfo) {
 			var socket = new ChromeTcpSocket(createInfo.socketId);
 			socket.on('closed', onSocketClosed);
@@ -38,7 +43,7 @@
 	 * @param  {Object}   properties SocketProperties sent to the chrome.sockets.tcpServer.create
 	 * @param  {Function} cb         Callback function(ChromeTcpServerSocket)
 	 */
-	chrome.sockets.tcpServer.open = function(properties, cb) {
+	chrome.socketsExtended.tcpServer.open = function(properties, cb) {
 		chrome.sockets.tcpServer.create(properties, function(createInfo) {
 			var socket = new ChromeTcpServerSocket(createInfo.socketId);
 			socket.on('closed', onSocketClosed);
@@ -52,7 +57,7 @@
 	 * @param  {Object}   properties SocketProperties sent to the chrome.sockets.udpServer.create
 	 * @param  {Function} cb         Callback function(ChromeUdpServerSocket)
 	 */
-	chrome.sockets.udp.open = function(properties, cb) {
+	chrome.socketsExtended.udp.open = function(properties, cb) {
 		chrome.sockets.udp.create(properties, function(createInfo) {
 			var socket = new ChromeUdpSocket(createInfo.socketId);
 			socket.on('closed', onSocketClosed);
@@ -66,7 +71,7 @@
 	 * Closes ALL tcp sockets! Even ones not created using this wrapper.
 	 * @param  {Function} cb Callback function
 	 */
-	chrome.sockets.tcp.closeAll = function(cb) {
+	chrome.socketsExtended.tcp.closeAll = function(cb) {
 		chrome.sockets.tcp.getSockets(function(sockets) {
 			for (var n = 0; n < sockets.length; n++) {
 				chrome.sockets.tcp.close(sockets[n].socketId);
@@ -79,7 +84,7 @@
 	 * Closes ALL udp sockets! Even ones not created using this wrapper.
 	 * @param  {Function} cb Callback function
 	 */
-	chrome.sockets.udp.closeAll = function(cb) {
+	chrome.socketsExtended.udp.closeAll = function(cb) {
 		chrome.sockets.udp.getSockets(function(sockets) {
 			for (var n = 0; n < sockets.length; n++) {
 				chrome.sockets.udp.close(sockets[n].socketId);
@@ -92,7 +97,7 @@
 	 * Closes ALL tcpSerer sockets! Even ones not created using this wrapper.
 	 * @param  {Function} cb Callback function
 	 */
-	chrome.sockets.tcpServer.closeAll = function(cb) {
+	chrome.socketsExtended.tcpServer.closeAll = function(cb) {
 		chrome.sockets.tcpServer.getSockets(function(sockets) {
 			for (var n = 0; n < sockets.length; n++) {
 				chrome.sockets.tcpServer.close(sockets[n].socketId);
