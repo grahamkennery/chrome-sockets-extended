@@ -1,0 +1,27 @@
+{
+     "name": "chrome-sockets-extended tests",
+     "version": "1.0.0",
+     "app": {
+          "background": { "scripts": [ "background.js" ] }
+     },
+     "permissions": [
+     	{"socket": [ "tcp-connect:*:*" ]},
+     	"storage"
+     ],
+     "icons": {},
+     "minimum_chrome_version": "33.0",
+     "manifest_version": 2,
+     "sockets": { 
+          "udp": {
+               "send" : "*:*",
+               "bind" : "0.0.0.0:*",
+               "multicastMembership": ""
+          },
+          "tcp": {
+               "connect" : "*"
+          },
+          "tcpServer": {
+               "listen": "*"
+          }
+     }
+}

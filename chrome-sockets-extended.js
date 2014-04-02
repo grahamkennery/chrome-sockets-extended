@@ -1,5 +1,6 @@
 (function(window) {
 	chrome.socketsExtended = {
+		_classes: {},
 		tcp: {},
 		udp: {},
 		tcpServer: {}
@@ -291,5 +292,11 @@
 		chrome.sockets.tcpServer.listen(this.socketId, host, port, cb);
 	};
 
+	ChromeTcpServerSocket.prototype.disconnect = function(cb) {
+		chrome.sockets.tcpServer.disconnect(this.socketId, cb);
+	};
 
+	chrome.socketsExtended._classes['ChromeTcpSocket'] = ChromeTcpSocket;
+	chrome.socketsExtended._classes['ChromeUdpSocket'] = ChromeUdpSocket;
+	chrome.socketsExtended._classes['ChromeTcpServerSocket'] = ChromeTcpServerSocket;
 })(window);
