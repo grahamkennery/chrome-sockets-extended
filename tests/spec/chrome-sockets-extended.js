@@ -48,6 +48,12 @@ describe('tcp', function() {
 			done();
 		});
 	});
+
+	afterEach(function(done) {
+		socket.close();
+		done();
+	});
+
 	it('open returns socket', function(done) {
 		console.log(socket);
 		expect(socket).not.toBe(null);
@@ -202,6 +208,11 @@ describe('udp', function() {
 		});
 	});
 
+	afterEach(function(done) {
+		socket.close();
+		done();
+	});
+
 	it('open returns socket', function(done) {
 		expect(socket).not.toBe(null);
 		expect(socket instanceof window.chrome.socketsExtended._classes.ChromeUdpSocket).toEqual(true);
@@ -228,6 +239,65 @@ describe('udp', function() {
 
 		done();
 	});
+	it('setPaused succeeds', function(done) {
+		socket.setPaused(true, function() {
+			socket.setPaused(false, function() {
+				done();
+			})
+		});
+	});
+	it('bind to all interfaces, random port', function(done) {
+		socket.bind('0.0.0.0', 0, function(result) {
+			expect(result).toBeDefined();
+			expect(result).toEqual(0);
+			done();
+		});
+	});
+	it('bind to all interfaces, specific port', function(done) {
+		socket.bind('0.0.0.0', 4320, function(result) {
+			expect(result).toBeDefined();
+			expect(result).toEqual(0);
+			done();
+		});
+	});
+	it('bind to single interface, random port', function(done) {
+		socket.bind('127.0.0.1', 0, function(result) {
+			expect(result).toBeDefined();
+			expect(result).toEqual(0);
+			done();
+		});
+	});
+	it('bind to single interface, specific port', function(done) {
+		socket.bind('127.0.0.1', 4321, function(result) {
+			expect(result).toBeDefined();
+			expect(result).toEqual(0);
+			done();
+		});
+	});
+	it('send data succeeds', function(done) {
+		window.chrome.socketsExtended.udp.open({}, function(serverSocket) {
+			serverSocket.bind('127.0.0.1', 4322, function() {
+				serverSocket.on('receive', function(receiveInfo) {
+					expect(receiveInfo.data).toBeDefined();
+					expect(receiveInfo.data.byteLength).toEqual(10);
+					expect(arrayBufferToString(receiveInfo.data)).toEqual('1234567890');
+					setTimeout(function() {
+						serverSocket.close();
+						done();
+					}, 1000);
+				});
+				socket.bind('127.0.0.1', 0, function() {
+					socket.send(stringToArrayBuffer('1234567890'), '127.0.0.1', 4322, function(result) {
+						expect(result).toBeDefined();
+						expect(result.resultCode).toBeDefined();
+						expect(result.resultCode).toEqual(0);
+						expect(result.bytesSent).toBeDefined(10);
+						expect(result.bytesSent).toEqual(10);
+					});
+				});
+			});
+		})
+	});
 });
 
 
@@ -238,6 +308,11 @@ describe('tcpServer', function() {
 			socket = newSocket;
 			done();
 		});
+	});
+
+	afterEach(function(done) {
+		socket.close();
+		done();
 	});
 
 	it('open returns socket', function(done) {

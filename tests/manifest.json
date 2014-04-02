@@ -14,7 +14,7 @@
      "sockets": { 
           "udp": {
                "send" : "*:*",
-               "bind" : "0.0.0.0:*",
+               "bind" : "*:*",
                "multicastMembership": ""
           },
           "tcp": {
