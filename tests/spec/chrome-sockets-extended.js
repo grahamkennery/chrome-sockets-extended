@@ -298,6 +298,176 @@ describe('udp', function() {
 			});
 		})
 	});
+
+	it('setMulticastTimeToLive succeeds', function(done) {
+		socket.setMulticastTimeToLive(10, function(result) {
+			expect(result).toBeDefined();
+			expect(result).toEqual(0);
+			done();
+		});
+	});
+
+	it('setMulticastLoopbackMode succeeds', function(done) {
+		socket.setMulticastLoopbackMode(false, function(result) {
+			expect(result).toBeDefined();
+			expect(result).toEqual(0);
+
+			socket.setMulticastLoopbackMode(true, function(result) {
+				expect(result).toBeDefined();
+				expect(result).toEqual(0);
+				done();
+			});
+		})
+	});
+
+	it('joinGroup fails when not bound to interface', function(done) {
+		socket.joinGroup('239.254.254.254', function(result) {
+			expect(result).toBeDefined();
+			expect(result).toBeLessThan(0);
+			
+			socket.getJoinedGroups(function(groupList) {
+				expect(groupList).toBeDefined();
+				expect(groupList.length).toEqual(0);
+				done();
+			});
+		});
+	});
+	it('joinGroup succeeds on single interface', function(done) {
+		socket.bind('127.0.0.1', 4328, function() {
+			socket.joinGroup('239.254.254.254', function(result) {
+				expect(result).toBeDefined();
+				expect(result).toEqual(0);
+
+				socket.getJoinedGroups(function(groupList) {
+					expect(groupList).toBeDefined();
+					expect(groupList.length).toEqual(1);
+					done();
+				});
+			});
+		});
+	});
+	it('joinGroup succeeds on all interfaces', function(done) {
+		socket.bind('0.0.0.0', 4328, function() {
+			socket.joinGroup('239.254.254.254', function(result) {
+				expect(result).toBeDefined();
+				expect(result).toEqual(0);
+				
+				socket.getJoinedGroups(function(groupList) {
+					expect(groupList).toBeDefined();
+					expect(groupList.length).toEqual(1);
+					done();
+				});
+			});
+		});
+	});
+	it('leaveGroup succeeds', function(done) {
+		socket.bind('0.0.0.0', 4328, function() {
+			socket.joinGroup('239.254.254.254', function(result) {
+				expect(result).toBeDefined();
+				expect(result).toEqual(0);
+				
+				socket.getJoinedGroups(function(groupList) {
+					expect(groupList).toBeDefined();
+					expect(groupList.length).toEqual(1);
+					
+					socket.leaveGroup('239.254.254.254', function(result) {
+						expect(result).toBeDefined();
+						expect(result).toEqual(0);
+
+						socket.getJoinedGroups(function(groupList) {
+							expect(groupList).toBeDefined();
+							expect(groupList.length).toEqual(0);
+							done();
+						});
+					});
+
+				});
+			});
+		});
+	});
+	it('getJoinedGroups returns proper groups', function(done) {
+		socket.bind('0.0.0.0', 4328, function() {
+			socket.joinGroup('239.254.254.254', function(result) {
+				
+				socket.getJoinedGroups(function(groupList) {
+					expect(groupList).toBeDefined();
+					expect(groupList.length).toEqual(1);
+					expect(groupList[0]).toEqual('239.254.254.254');
+					
+					socket.joinGroup('239.254.254.253', function(result) {
+
+						socket.getJoinedGroups(function(groupList) {
+							expect(groupList).toBeDefined();
+							expect(groupList.length).toEqual(2);
+							expect(groupList[0]).toEqual('239.254.254.254');
+							expect(groupList[1]).toEqual('239.254.254.253');
+
+							socket.leaveGroup('239.254.254.254', function(result) {
+
+								socket.getJoinedGroups(function(groupList) {
+									expect(groupList).toBeDefined();
+									expect(groupList.length).toEqual(1);
+									expect(groupList[0]).toEqual('239.254.254.253');
+									done();
+								});
+							});
+							
+						});
+					});
+
+				});
+			});
+		});
+	});
+
+	it('multicast send/receive works with loopback', function(done) {
+		window.chrome.socketsExtended.udp.open({}, function(socket2) {
+			socket.bind('0.0.0.0', 4444, function(result) {
+				socket2.bind('0.0.0.0', 4445, function(result) {
+					socket.joinGroup('239.254.254.252', function(result) {
+						socket2.joinGroup('239.254.254.252', function(result) {
+							socket.setMulticastLoopbackMode(true, function() {
+								socket.on('receive', function(receiveData) {
+									expect(receiveData).toBeDefined();
+									expect(receiveData.data).toBeDefined();
+									expect(receiveData.data.byteLength).toEqual(10);
+									expect(arrayBufferToString(receiveData.data)).toEqual('1234567890');
+
+									socket2.close();
+									done();
+								});
+
+								socket2.on('receive', function(receiveData) {
+									console.log('GOT RECEIVE');
+									expect(receiveData).toBeDefined();
+									expect(receiveData.data).toBeDefined();
+									expect(receiveData.data.byteLength).toEqual(10);
+									expect(arrayBufferToString(receiveData.data)).toEqual('0123456789');
+									socket.send(stringToArrayBuffer('1234567890'), '239.254.254.252', 4444, function(result) {
+										expect(result).toBeDefined();
+										expect(result.resultCode).toBeDefined();
+										expect(result.resultCode).toEqual(0);
+										expect(result.bytesSent).toBeDefined(10);
+										expect(result.bytesSent).toEqual(10);
+									});
+								});
+
+								socket.send(stringToArrayBuffer('0123456789'), '239.254.254.252', 4445, function(result) {
+									expect(result).toBeDefined();
+									expect(result.resultCode).toBeDefined();
+									expect(result.resultCode).toEqual(0);
+									expect(result.bytesSent).toBeDefined(10);
+									expect(result.bytesSent).toEqual(10);
+								});
+							});
+						});
+					});
+				});
+			});
+			
+			
+		});
+	})
 });
 
 
