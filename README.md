@@ -104,7 +104,7 @@ serverSocket.on('accept', function(clientSocket) {
 
 ###More Examples
 ####TCP echo example
-```
+```javascript
 // Create server socket
 chrome.sockets.tcpServer.open({}, function(serverSocket) {
 	
