@@ -1,3 +1,18 @@
+jasmine.DEFAULT_TIMEOUT_INTERVAL = 20000;
+
+function stringToArrayBuffer(message) {
+	var buffer = new ArrayBuffer(message.length);
+    var view = new Uint8Array(buffer);
+    for(var i = 0; i < message.length; i++) {
+        view[i] = message.charCodeAt(i);
+    }
+
+    return buffer;
+}
+
+function arrayBufferToString(message) {
+	return String.fromCharCode.apply(null, new Uint8Array(message));
+}
 
 
 describe('Namespace', function() {
@@ -26,92 +41,223 @@ describe('Namespace', function() {
 });
 
 describe('tcp', function() {
-	it('open returns socket', function(done) {
-		window.chrome.socketsExtended.tcp.open({}, function(socket) {
-			expect(socket).not.toBe(null);
-			expect(socket instanceof window.chrome.socketsExtended._classes.ChromeTcpSocket).toEqual(true);
+	var socket;
+	beforeEach(function(done) {
+		window.chrome.socketsExtended.tcp.open({}, function(newSocket) {
+			socket = newSocket;
 			done();
 		});
 	});
+	it('open returns socket', function(done) {
+		console.log(socket);
+		expect(socket).not.toBe(null);
+		expect(socket instanceof window.chrome.socketsExtended._classes.ChromeTcpSocket).toEqual(true);
+		done();
+	});
 	it('contains function definitions', function(done) {
-		window.chrome.socketsExtended.tcp.open({}, function(socket) {
-			expect(socket.update).toBeDefined();
-			expect(socket.setPaused).toBeDefined();
-			expect(socket.setKeepAlive).toBeDefined();
-			expect(socket.setNoDelay).toBeDefined();
-			expect(socket.connect).toBeDefined();
-			expect(socket.disconnect).toBeDefined();
-			expect(socket.send).toBeDefined();
-			expect(socket.close).toBeDefined();
-			expect(socket.getInfo).toBeDefined();
+		expect(socket.update).toBeDefined();
+		expect(socket.setPaused).toBeDefined();
+		expect(socket.setKeepAlive).toBeDefined();
+		expect(socket.setNoDelay).toBeDefined();
+		expect(socket.connect).toBeDefined();
+		expect(socket.disconnect).toBeDefined();
+		expect(socket.send).toBeDefined();
+		expect(socket.close).toBeDefined();
+		expect(socket.getInfo).toBeDefined();
 
-			// EventEmitter
-			expect(socket.on).toBeDefined();
-			expect(socket.removeListener).toBeDefined();
-			expect(socket.removeAllListeners).toBeDefined();
+		// EventEmitter
+		expect(socket.on).toBeDefined();
+		expect(socket.removeListener).toBeDefined();
+		expect(socket.removeAllListeners).toBeDefined();
 
+		done();
+	});
+	xit('connect times out with non-open port', function(done) {
+		socket.connect('127.0.0.1', 4319, function(result) {
+			expect(result).toBeDefined();
+			expect(result).toBeLessThan(0);
+		});
+	});
+	xit('connect times out with unreachable ip', function(done) {
+		socket.connect('192.168.2.1', 4319, function(result) {
+			expect(result).toBeDefined();
+			expect(result).toBeLessThan(0);
+		});
+	});
+	it('connect/disconnect succeeds', function(done) {
+		window.chrome.socketsExtended.tcpServer.open({}, function(serverSocket) {
+			serverSocket.listen('127.0.0.1', 4320, function() {
+				socket.connect('127.0.0.1', 4320, function(connectResult) {
+					expect(connectResult).toBeDefined();
+					expect(connectResult).toEqual(0);
+					socket.disconnect(function() {
+						done();
+						serverSocket.close();
+					});
+				});
+			});
+		});
+	});
+	it('setPaused succeeds', function(done) {
+		socket.setPaused(true, function() {
+			socket.setPaused(false, function() {
+				done();
+			})
+		});
+	});
+	it('setKeepAlive with non-connected socket returns error', function(done) {
+		socket.setKeepAlive(true, 1, function(result) {
+			expect(result).toBeDefined();
+			expect(result).toBeLessThan(0);
 			done();
+		});
+	});
+	it('setKeepAlive succeeds', function(done) {
+		window.chrome.socketsExtended.tcpServer.open({}, function(serverSocket) {
+			serverSocket.listen('127.0.0.1', 4322, function() {
+				socket.connect('127.0.0.1', 4322, function() {
+					socket.setKeepAlive(true, 1, function(result) {
+						expect(result).toBeDefined();
+						expect(result).toEqual(0);
+
+						socket.setKeepAlive(false, 0, function(result) {
+							expect(result).toBeDefined();
+							expect(result).toEqual(0);
+							done();
+							socket.close();
+							serverSocket.close();	
+						});
+						
+					});	
+				})
+			})
+		});
+	});
+	it('setNoDelay with non-connected socket fails', function(done) {
+		socket.setNoDelay(true, function(result) {
+			expect(result).toBeDefined();
+			expect(result).toBeLessThan(0);
+			done();
+		});
+	});
+	it('setNoDelay succeeds', function(done) {
+		window.chrome.socketsExtended.tcpServer.open({}, function(serverSocket) {
+			serverSocket.listen('127.0.0.1', 4323, function() {
+				socket.connect('127.0.0.1', 4323, function() {
+					socket.setNoDelay(true, function(result) {
+						expect(result).toBeDefined();
+						expect(result).toEqual(0);
+
+						socket.setNoDelay(false, function(result) {
+							expect(result).toBeDefined();
+							expect(result).toEqual(0);
+							done();
+							socket.close();
+							serverSocket.close();	
+						});
+						
+					});	
+				})
+			})
+		});
+	});
+	it('send succeeds', function(done) {
+		window.chrome.socketsExtended.tcpServer.open({}, function(serverSocket) {
+			serverSocket.listen('127.0.0.1', 4323, function() {
+				serverSocket.on('accept', function(clientSocket) {
+					clientSocket.on('receive', function(receiveInfo) {
+						expect(receiveInfo).toBeDefined();
+						expect(receiveInfo.data).toBeDefined();
+						expect(receiveInfo.data.byteLength).toEqual(10);
+						expect(arrayBufferToString(receiveInfo.data)).toEqual('1234567890');
+						clientSocket.close();
+						serverSocket.close();
+						setTimeout(function() {
+							done();
+						}, 1000);
+					});
+					clientSocket.setPaused(false);
+				});
+
+				socket.connect('127.0.0.1', 4323, function() {
+					socket.send(stringToArrayBuffer('1234567890'), function(result) {
+						expect(result).toBeDefined();
+						expect(result.resultCode).toBeDefined()
+						expect(result.resultCode).toEqual(0);
+						expect(result.bytesSent).toBeDefined();
+						expect(result.bytesSent).toEqual(10);
+					})
+				});
+			});
 		});
 	});
 });
 
 describe('udp', function() {
-	it('open returns socket', function(done) {
-		window.chrome.socketsExtended.udp.open({}, function(socket) {
-			expect(socket).not.toBe(null);
-			expect(socket instanceof window.chrome.socketsExtended._classes.ChromeUdpSocket).toEqual(true);
+	var socket;
+	beforeEach(function(done) {
+		window.chrome.socketsExtended.udp.open({}, function(newSocket) {
+			socket = newSocket;
 			done();
 		});
 	});
+
+	it('open returns socket', function(done) {
+		expect(socket).not.toBe(null);
+		expect(socket instanceof window.chrome.socketsExtended._classes.ChromeUdpSocket).toEqual(true);
+		done();
+	});
 	it('contains function definitions', function(done) {
-		window.chrome.socketsExtended.udp.open({}, function(socket) {
-			expect(socket.update).toBeDefined();
-			expect(socket.setPaused).toBeDefined();
-			expect(socket.bind).toBeDefined();
-			expect(socket.send).toBeDefined();
-			expect(socket.close).toBeDefined();
-			expect(socket.getInfo).toBeDefined();
-			expect(socket.joinGroup).toBeDefined();
-			expect(socket.leaveGroup).toBeDefined();
-			expect(socket.setMulticastTimeToLive).toBeDefined();
-			expect(socket.setMulticastLoopbackMode).toBeDefined();
-			expect(socket.getJoinedGroups).toBeDefined();
+		expect(socket.update).toBeDefined();
+		expect(socket.setPaused).toBeDefined();
+		expect(socket.bind).toBeDefined();
+		expect(socket.send).toBeDefined();
+		expect(socket.close).toBeDefined();
+		expect(socket.getInfo).toBeDefined();
+		expect(socket.joinGroup).toBeDefined();
+		expect(socket.leaveGroup).toBeDefined();
+		expect(socket.setMulticastTimeToLive).toBeDefined();
+		expect(socket.setMulticastLoopbackMode).toBeDefined();
+		expect(socket.getJoinedGroups).toBeDefined();
 
 
-			// EventEmitter
-			expect(socket.on).toBeDefined();
-			expect(socket.removeListener).toBeDefined();
-			expect(socket.removeAllListeners).toBeDefined();
+		// EventEmitter
+		expect(socket.on).toBeDefined();
+		expect(socket.removeListener).toBeDefined();
+		expect(socket.removeAllListeners).toBeDefined();
 
-			done();
-		});
+		done();
 	});
 });
 
 
 describe('tcpServer', function() {
-	it('open returns socket', function(done) {
-		window.chrome.socketsExtended.tcpServer.open({}, function(socket) {
-			expect(socket).not.toBe(null);
-			expect(socket instanceof window.chrome.socketsExtended._classes.ChromeTcpServerSocket).toEqual(true);
+	var socket;
+	beforeEach(function(done) {
+		window.chrome.socketsExtended.tcpServer.open({}, function(newSocket) {
+			socket = newSocket;
 			done();
 		});
 	});
+
+	it('open returns socket', function(done) {
+		expect(socket).not.toBe(null);
+		expect(socket instanceof window.chrome.socketsExtended._classes.ChromeTcpServerSocket).toEqual(true);
+		done();
+	});
 	it('contains function definitions', function(done) {
-		window.chrome.socketsExtended.tcpServer.open({}, function(socket) {
-			expect(socket.update).toBeDefined();
-			expect(socket.setPaused).toBeDefined();
-			expect(socket.listen).toBeDefined();
-			expect(socket.disconnect).toBeDefined();
-			expect(socket.close).toBeDefined();
-			expect(socket.getInfo).toBeDefined();
+		expect(socket.update).toBeDefined();
+		expect(socket.setPaused).toBeDefined();
+		expect(socket.listen).toBeDefined();
+		expect(socket.disconnect).toBeDefined();
+		expect(socket.close).toBeDefined();
+		expect(socket.getInfo).toBeDefined();
 
-			// EventEmitter
-			expect(socket.on).toBeDefined();
-			expect(socket.removeListener).toBeDefined();
-			expect(socket.removeAllListeners).toBeDefined();
+		// EventEmitter
+		expect(socket.on).toBeDefined();
+		expect(socket.removeListener).toBeDefined();
+		expect(socket.removeAllListeners).toBeDefined();
 
-			done();
-		});
+		done();
 	});
 });
