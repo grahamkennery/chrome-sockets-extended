@@ -36,7 +36,43 @@ describe('Namespace', function() {
 		expect(window.chrome.socketsExtended.tcp.open).toBeDefined();
 		expect(window.chrome.socketsExtended.udp.open).toBeDefined();
 		expect(window.chrome.socketsExtended.tcpServer.open).toBeDefined();
+		expect(window.chrome.socketsExtended.tcp.closeAll).toBeDefined();
+		expect(window.chrome.socketsExtended.udp.closeAll).toBeDefined();
+		expect(window.chrome.socketsExtended.tcpServer.closeAll).toBeDefined();
 		done();
+	});
+
+	it('tcp - closeAll to work', function(done) {
+		window.chrome.socketsExtended.tcp.closeAll(function() {
+			window.chrome.sockets.tcp.getSockets(function(socketList) {
+				expect(socketList).toBeDefined();
+				expect(socketList.length).toBeDefined();
+				expect(socketList.length).toEqual(0);
+				done();
+			});
+		})
+	});
+
+	it('udp - closeAll to work', function(done) {
+		window.chrome.socketsExtended.udp.closeAll(function() {
+			window.chrome.sockets.udp.getSockets(function(socketList) {
+				expect(socketList).toBeDefined();
+				expect(socketList.length).toBeDefined();
+				expect(socketList.length).toEqual(0);
+				done();
+			});
+		})
+	});
+
+	it('tcpServer - closeAll to work', function(done) {
+		window.chrome.socketsExtended.tcpServer.closeAll(function() {
+			window.chrome.sockets.tcpServer.getSockets(function(socketList) {
+				expect(socketList).toBeDefined();
+				expect(socketList.length).toBeDefined();
+				expect(socketList.length).toEqual(0);
+				done();
+			});
+		})
 	});
 });
 
@@ -50,6 +86,7 @@ describe('tcp', function() {
 	});
 
 	afterEach(function(done) {
+		socket.disconnect();
 		socket.close();
 		done();
 	});
@@ -169,13 +206,14 @@ describe('tcp', function() {
 	});
 	it('send succeeds', function(done) {
 		window.chrome.socketsExtended.tcpServer.open({}, function(serverSocket) {
-			serverSocket.listen('127.0.0.1', 4323, function() {
+			serverSocket.listen('127.0.0.1', 4324, function() {
 				serverSocket.on('accept', function(clientSocket) {
 					clientSocket.on('receive', function(receiveInfo) {
 						expect(receiveInfo).toBeDefined();
 						expect(receiveInfo.data).toBeDefined();
 						expect(receiveInfo.data.byteLength).toEqual(10);
 						expect(arrayBufferToString(receiveInfo.data)).toEqual('1234567890');
+						clientSocket.disconnect();
 						clientSocket.close();
 						serverSocket.close();
 						setTimeout(function() {
@@ -185,7 +223,7 @@ describe('tcp', function() {
 					clientSocket.setPaused(false);
 				});
 
-				socket.connect('127.0.0.1', 4323, function() {
+				socket.connect('127.0.0.1', 4324, function() {
 					socket.send(stringToArrayBuffer('1234567890'), function(result) {
 						expect(result).toBeDefined();
 						expect(result.resultCode).toBeDefined()
@@ -481,6 +519,7 @@ describe('tcpServer', function() {
 	});
 
 	afterEach(function(done) {
+		socket.disconnect();
 		socket.close();
 		done();
 	});
@@ -505,4 +544,20 @@ describe('tcpServer', function() {
 
 		done();
 	});
+	it('listen succeeds', function(done) {
+		socket.listen('127.0.0.1', 4431, function(result) {
+			expect(result).toBeDefined();
+			expect(result).toEqual(0);
+			done();
+		});
+	});
+	it('listen fails on reserved port', function(done) {
+		socket.listen('127.0.0.1', 10, function(result) {
+			expect(result).toBeDefined();
+			expect(result).toBeLessThan(0);
+			done();
+		});
+	});
+	
+
 });
