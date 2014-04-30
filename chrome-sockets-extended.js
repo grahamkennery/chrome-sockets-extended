@@ -206,9 +206,13 @@
 
 	ChromeSocket.prototype.close = function(cb) {
 		var self = this;
-		this._api.close(this.socketId, function() {
+		try {
+			this._api.close(this.socketId, function() {
+				self.emit('closed');
+			});
+		} catch(e) {
 			self.emit('closed');
-		});
+		}
 	};
 
 	ChromeSocket.prototype.getInfo = function(cb) {
@@ -237,7 +241,11 @@
 	};
 
 	ChromeTcpSocket.prototype.disconnect = function(cb) {
-		chrome.sockets.tcp.disconnect(this.socketId, cb);
+		try {
+			chrome.sockets.tcp.disconnect(this.socketId, cb);
+		} catch(e) {
+
+		}
 	};
 
 	ChromeTcpSocket.prototype.send = function(arrayBuffer, cb) {
@@ -293,7 +301,11 @@
 	};
 
 	ChromeTcpServerSocket.prototype.disconnect = function(cb) {
-		chrome.sockets.tcpServer.disconnect(this.socketId, cb);
+		try {
+			chrome.sockets.tcpServer.disconnect(this.socketId, cb);
+		} catch(e) {
+
+		}
 	};
 
 	chrome.socketsExtended._classes['ChromeTcpSocket'] = ChromeTcpSocket;
